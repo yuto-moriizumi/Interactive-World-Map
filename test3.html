@@ -1,0 +1,144 @@
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Page Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- <link rel="stylesheet" type="text/css" media="screen" href="main.css" /> -->
+</head>
+
+<body>
+    <div>
+        <img id="map" style="align-content: center;" src="map2.png">
+        <div style="height: 150px;border: double;width: 100%;">
+            <img id="currentflag" src="flags/NotCountry.png" width="225px" height="150px" style="float:left;">
+            <table border="1" style="float:left;">
+                <tr>
+                    <th>操作中の国家</th>
+                    <td id="currentcountry" style="width: 10em;">NotCountry</td>
+                </tr>
+                <tr>
+                    <th>軍事力</th>
+                    <td>未実装</td>
+                </tr>
+            </table>
+            <img id="targetflag" src="flags/NotCountry.png" width="225px" height="150px" style="float:left;">
+            <table border="1" style="float:left;">
+                <tr>
+                    <th>選択中の国家</th>
+                    <td id="targetcountry" style="width: 10em;">NotCountry</td>
+                </tr>
+                <tr>
+                    <th>不可侵条約</th>
+                    <td id="NonAggression">なし</td>
+                </tr>
+                <tr>
+                    <th>要求できる州数</th>
+                    <td id="AvailableDemands">0</td>
+                </tr>
+                <tr>
+                    <th>選択中の州</th>
+                    <td id="targetstate">なし</td>
+                </tr>
+            </table>
+            <form method="POST">
+                <input type="button" value="国を選択" onclick="SelectCountry();">
+                <input type="button" value="宣戦布告" id="idDeclareWar" onclick="DeclareWar();">
+            </form>
+        </div>
+    </div>
+    <script>
+        //仕様
+        //JSでの文字列分割の都合上、国名と州名は32文字
+        //PHPに送るデータ形式は「命令,データ1,データ2,…」
+
+        //ウィンドウリサイズを取得し設定を変更
+        //window.onresize = function () {
+
+        var MapPrint = document.getElementById('map');
+        var MapPrintWidth = window.innerWidth * 0.99;
+        MapPrint.setAttribute("width", MapPrintWidth);
+        MapPrintRatio = 5632 / MapPrintWidth; //逆数（小さく表示するほど数値が大きくなる）
+        //}
+
+        //マウス位置を送信して結果を反映
+        var canvas = document.getElementById("map");
+        canvas.onclick = function (evt) {
+            var x = parseInt(evt.offsetX);
+            var y = parseInt(evt.offsetY);
+            var xmlhttp = createXmlHttpRequest();
+            if (xmlhttp != null) {
+                xmlhttp.open("POST", "../test3.php", false);
+                xmlhttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                var data = "data=" + "MapClick," + document.getElementById("currentcountry").innerHTML + "," + x * MapPrintRatio + "," + y * MapPrintRatio;
+                xmlhttp.send(data);
+                var result = xmlhttp.responseText;
+                result = result.split(",");
+                document.getElementById("targetstate").innerHTML = result[0];
+                document.getElementById("targetcountry").innerHTML = result[1];
+                document.getElementById("targetflag").src = "flags/" + result[1] + ".png";
+                document.getElementById("NonAggression").innerHTML = result[4];
+                document.getElementById("AvailableDemands").innerHTML = result[2];
+                if (result[3] == 1) document.getElementById('idDeclareWar').disabled = true;
+                else document.getElementById('idDeclareWar').disabled = false;
+            }
+        }
+
+        //国を選択
+        function SelectCountry() {
+            if (document.getElementById("targetcountry").innerHTML == "NotCountry") {
+                alert("国ではないものを操作国にすることはできません");
+            } else {
+                document.getElementById("currentflag").src = document.getElementById("targetflag").src;
+                document.getElementById("currentcountry").innerHTML = document.getElementById("targetcountry").innerHTML;
+            }
+        }
+
+        //宣戦布告
+        function DeclareWar() {
+            if (document.getElementById("currentcountry").innerHTML == "NotCountry") {
+                alert("先に操作国を選択して下さい");
+            } else if (document.getElementById("targetcountry").innerHTML == "NotCountry") {
+                alert("国ではないものに宣戦布告することはできません");
+            } else if (document.getElementById("currentcountry").innerHTML != document.getElementById("targetcountry").innerHTML) {
+                var xmlhttp = createXmlHttpRequest();
+                if (xmlhttp != null) {
+                    xmlhttp.open("POST", "../test3.php", false);
+                    xmlhttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    var data = "data=" + "DeclareWar," + document.getElementById("currentcountry").innerHTML + "," + document.getElementById("targetcountry").innerHTML;
+                    xmlhttp.send(data);
+                    var result = xmlhttp.responseText;
+                    if (result == "Victory") alert(document.getElementById("currentcountry").innerHTML + "は" + document.getElementById("targetcountry").innerHTML + "に勝利した！新たに1州要求できるようになった！");
+                    else if (result == "Defeat") alert(document.getElementById("currentcountry").innerHTML + "は" + document.getElementById("targetcountry").innerHTML + "に敗北した！新たに1州要求される可能性がある。");
+                    else alert("エラー：管理者に連絡してください");
+                }
+            } else {
+                alert("自国に宣戦布告することはできません");
+            }
+        }
+
+        //PHPとデータを送受信するところ
+        function createXmlHttpRequest() {
+            var xmlhttp = null;
+            if (window.ActiveXObject) {
+                try {
+                    xmlhttp = new ActiveXObject("Msxml2.XMLHTTP");
+                }
+                catch (e) {
+                    try {
+                        xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+                    }
+                    catch (e2) {
+                    }
+                }
+            }
+            else if (window.XMLHttpRequest) {
+                xmlhttp = new XMLHttpRequest();
+            }
+            return xmlhttp;
+        }
+    </script>
+</body>
+
+</html>

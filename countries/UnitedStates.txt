@@ -1,0 +1,5 @@
+Japan,1,500.
+France,1,1930.
+Britain,1,1931.
+Germany,1,1932.
+Mexico,10,1931.
